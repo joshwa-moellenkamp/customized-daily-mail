@@ -3,16 +3,16 @@
 A web scraper that provides items of interest.
 
 * Script
-Documentation here
+  * Documentation here
 
 * Authentication
-customized-daily-mail uses Google's SMTP server to send mail. Use a gmail address and password to get the script up and running.
+  * customized-daily-mail uses Google's SMTP server to send mail. Use a gmail address and password to get the script up and running.
 
 * Automation
-In my implementation, customized daily-mail.py is executed from /etc/crontab. My crontab reads
-...
+  * In my implementation, customized daily-mail.py is executed from /etc/crontab. My crontab reads
+```
 0 7 * * * root python /root/weather/weather.py >> /var/log/customized-daily-mail.log 2&>1
-...
+```
 
 * TODOs
   * Unit testing for web scraping methods
