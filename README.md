@@ -8,6 +8,8 @@ Here is a sample mail from January 7:
 
 ![Sample Mail](/images/sample-mail.png)
 
+## Documentation
+
 * Script
   * The script is a simple web parser that extracts information from curled web pages and includes this information in a string that is sent via Google's SMTP server. The script itself is my best effort at self-documenting code, and should hopefully be readable.
 
