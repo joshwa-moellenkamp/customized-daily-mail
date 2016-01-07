@@ -4,6 +4,44 @@ A web scraper that provides items of interest (customized) every morning at 7:00
 
 When I'm groggy in the morning, I don't want to navigate the web in order to find things that I check every morning anyway. The updates I receive appear in order: (1) How cold it is (Montana can be awful about this), (2) How much snow the local resort got overnight (I've been diligent about attending class all 3 1/2 years up until this point, I'm taking the Parks & Rec TREAT-YO-SELF approach to this semester, especially given that I've stepped down my credit amount), (3) NBA scores from the previous night, and finally, (4) scheduled NBA games for the day.
 
+Here is a sample mail from January 7:
+
+Hello, Joshwa. Here's your daily update--
+It is 27.1 F (-2.7 C) degrees and Overcast outside right now. The wind is blowing 1.0 mph WNW. The relative humidy is 91%.
+
+Here's the link for the full weather: http://www.wunderground.com/us/mt/bozeman
+
+Snow report for Bridger Bowl:
+1" overnight
+1" in the last 24 hours
+38" settled base depth
+118" seasonal snowfall
+
+Here's the link for the full snow report: http://bridgerbowl.com/weather/snow-report
+
+Here are the scores for yesterday's NBA games:
+NY 98, MIA 90
+IND 95, ORL 86
+CLE 121, WSH 115
+DET 99, BOS 94
+TOR 91, BKN 74
+DEN 78, MIN 74
+DAL 100, NO 91
+SA 123, UTAH 98
+PHX 111, CHA 102
+OKC 112, MEM 94
+LAC 109, POR 98
+
+Here are the scheduled games for today:
+ATL @ PHI
+BOS @ CHI
+UTAH @ HOU
+LAL @ SAC
+
+Here is the link for the full NBA schedule: http://espn.go.com/nba/schedule/_/date/20160106
+
+Have a great Thursday!
+
 * Script
   * The script is a simple web parser that extracts information from curled web pages and includes this information in a string that is sent via Google's SMTP server. The script itself is my best effort at self-documenting code, and should hopefully be readable.
 
