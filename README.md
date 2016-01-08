@@ -21,7 +21,7 @@ customized-daily-mail uses Google's SMTP server to send mail. Use a gmail addres
 ### Automation
 In my implementation, customized daily-mail.py is executed from /etc/crontab. My crontab reads
 ```
-0 7 * * * root python /root/weather/weather.py >> /var/log/customized-daily-mail.log 2&>1
+0 7 * * * root python /root/weather/weather.py
 ```
 
 ### TODOs
@@ -31,7 +31,6 @@ In my implementation, customized daily-mail.py is executed from /etc/crontab. My
   * Determine whether or not a more object-oriented design would be more effective
     * Split parsing of each website to a class or file?
     * Identify any web scraping design patterns,
-  * Implement logging system rather than using 2&>1 in crontab (probably doesn't make a difference for personal use. But this is matter of principle)
   * Include a helper file similar to authentication for desired 'to' address so that users aren't forced to grep through the code to find that instantiation
 
 

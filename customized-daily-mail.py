@@ -102,11 +102,10 @@ def bridger_bowl_snow_report():
     """
     Curl Bridger Bowl's snow report page. Parse for desired information.
 
-    return - (new_snow,          # Overnight snow
-              daily_snow,        # Snow in the last 24 hours
-              settled_depth,     # Settled base depth 
-              seasonal_snowfall) # Snow since the beginning of the season
+    return - constructed snow report string
     """
+    logging.debug("Entering bridger_bowl_snow_report method.")
+
     page = subprocess.call([
             "curl",
             "http://bridgerbowl.com/weather/snow-report", "-o",
@@ -122,22 +121,33 @@ def bridger_bowl_snow_report():
 
     # Gather the available fields relating to snowfall.
     new_snow = find_between(result[1], ":20px;\">", "<span")
+    if new_snow != "Trace":
+        new_snow = new_snow + "\""
     daily_snow = find_between(result[2], ":20px;\">", "<span")
-    settled_depth = find_between(result[3], ":20px;\">", "<span")
-    seasonal_snowfall = find_between(result[4], ":20px;\">", "<span")
+    if daily_snow != "Trace":
+        daily_snow = daily_snow + "\""
+    settled_depth = find_between(result[3], ":20px;\">", "<span") + "\""
+    seasonal_snowfall = find_between(result[4], ":20px;\">", "<span") + "\""
 
-    return new_snow, daily_snow, settled_depth, seasonal_snowfall
+    logging.debug("Exiting bridger_bowl_snow_report method.")
+
+    return ("Snow report for Bridger Bowl:\n"
+            "%s overnight\n"
+            "%s in the last 24 hours\n"
+            "%s settled base depth\n"
+            "%s seasonal snowfall\n\n"
+            "Here's the link for the full snow report: %s\n\n") % (
+                new_snow, daily_snow, settled_depth, 
+                seasonal_snowfall, snow_report_url)
 
 def bozeman_weather_report():
     """
     Return wunderground's API page for Bozeman. Parse for desired information.
 
-    return - (temp,
-              weather,
-              humid,
-              wind_dir,
-              wind_speed)
+    return - constructed weather report string
     """
+    logging.debug("Entering bozeman_weather_report method.")
+
     weather = subprocess.call([
             "curl",
             ("http://api.wunderground.com/api/"
@@ -155,7 +165,13 @@ def bozeman_weather_report():
     wind_dir   = results["current_observation"]["wind_dir"]
     wind_speed = results["current_observation"]["wind_mph"]
 
-    return temp, weather, humid, wind_dir, wind_speed
+    logging.debug("Exiting bozeman_weather_report method.")
+
+    return ("It is %s degrees and %s outside right now. "
+            "The wind is blowing %s mph %s. "
+            "The relative humidy is %s.\n\n"
+            "Here's the link for the full weather: %s\n\n") % (
+                temp, weather, wind_speed, wind_dir, humid, weather_url)
 
 def espn_nba_report(date_string, tomorrow):
     """
@@ -164,6 +180,8 @@ def espn_nba_report(date_string, tomorrow):
     return - (scores,         # Scores from the previous date
               upcoming_games) # Scheduled games for the current date
     """
+    logging.debug("Entering espn_nba_report method.")
+
     games = subprocess.call([
             "curl",
             "http://espn.go.com/nba/schedule/_/date/%s" % date_string,
@@ -184,16 +202,18 @@ def espn_nba_report(date_string, tomorrow):
             scores.append(find_between(substring, ">", "<"))
         iteration = iteration + 1
 
-    # Scrape the upcoming schedule for from the last element of the previous split.
-    upcoming_games = re.split("&lpos=nba:schedule:team", result[len(result) - 1])
+    # Scrape the upcoming schedule from the last element of the previous split.
+    upcoming_games = re.split("&lpos=nba:schedule:team", 
+                              result[len(result) - 1])
 
     # Toss away the first two elements. Then, toss away odd indeces after that.
     # The split string is used for the team names along with the team's logos.
-    # upcoming_games[0] is the initial unwanted information, then [1] is the logo.
-    # [2] is where we start receiving desired information, along with every other
-    # index after that.
+    # upcoming_games[0] is the initial unwanted information, then [1] is the 
+    # logo. [2] is where we start receiving desired information, along with 
+    # every other index after that.
 
-    if len(upcoming_games) >= 2 and tomorrow not in (upcoming_games[0], upcoming_games[1]):
+    if len(upcoming_games) >= 2 \
+    and tomorrow not in (upcoming_games[0], upcoming_games[1]):
         upcoming_games.pop(0)
         upcoming_games.pop(0)
 
@@ -208,10 +228,6 @@ def espn_nba_report(date_string, tomorrow):
                         find_between(upcoming_game, "abbr title", "/abbr>"),
                         ">",
                         "<"))
-        print "Processing team: ", (find_between(
-                        find_between(upcoming_game, "abbr title", "/abbr>"),
-                        ">",
-                        "<"))
 
         if tomorrow in upcoming_game:
             break
@@ -220,86 +236,13 @@ def espn_nba_report(date_string, tomorrow):
 
     index = 0
     while index + 1 < len(teams):
-        print "appending teams %s and %s" % (teams[index], teams[index + 1])
         scheduled_games.append(teams[index] + " @ " + teams[index + 1])
         index = index + 2
 
-    return scores, scheduled_games
-
-def date_string(int_month, day, year):
-    """
-    Using the month, day, and year, determine a string that will be used to access
-    a specific page on ESPN with all desired information.
-
-    Keyword arguments:
-    int_month - The month represented as a 1-12 integer
-    day - The day of the month
-
-    return - Formatted date string
-    """
-    date_string_month = "0" + str(int_month) if int_month < 10 else str(int_month)
-    date_string_day   = "0" + str(day - 1)   if day       < 10 else str(day - 1)
-
-    return "%s%s%s" % (year, date_string_month, date_string_day)
-
-def send_email(message, to_addrs = to_addrs, from_addr = from_addr):
-    """
-    Send an SMTP formatted email message to the specified to and from addresses.
-
-    Keyword arguments:
-    message - the SMTP formatted message
-    to - The list of addresses who will recieve the mail
-    from - The author of the message
-    """
-    server = smtplib.SMTP('smtp.gmail.com:587')
-    server.starttls()
-    server.login(authentication.mail_name, authentication.mail_pwd)
-    server.sendmail(from_addr, to_addrs, message)
-    server.quit()
-
-def main():
-    logging.basicConfig(filename = "/var/log/customized-daily-mail.log",
-                        level = logging.DEBUG)
-
-    logging.info("Info")
-    logging.debug("Debug")
-
-
-    print_formatting()
-
-    day_of_week, tomorrow, int_month, str_month, day, year = \
-            construct_time_variables(datetime.datetime.today())
-
-    new_snow, daily_snow, settled_depth, seasonal_snowfall = \
-            bridger_bowl_snow_report()
-
-    temp, weather, humid, wind_dir, wind_speed = \
-            bozeman_weather_report()
-
-    sched_date = date_string(int_month, day, year)
-    scores, scheduled_games = espn_nba_report(sched_date, tomorrow)
-
-    # Message to send.
-    message = (
-            "Subject: Update for %s, %s %s\n\n"
-	    "Hello, Joshwa. Here's your daily update--\r"
-    	    "It is %s degrees and %s outside right now. "
-            "The wind is blowing %s mph %s. The "
-	    "relative humidy is %s.\r\r"
-            "Here's the link for the full weather: %s\n\n"
-	    "Snow report for Bridger Bowl:\r"
-            "%s\" overnight\n"
-	    "%s\" in the last 24 hours\n"
-            "%s\" settled base depth\n"
-            "%s\" seasonal snowfall\n\n"
-	    "Here's the link for the full snow report: %s\n"
-              ) % (day_of_week, str_month, day,
-                   temp, weather, wind_speed, wind_dir, humid, weather_url,
-                   new_snow, daily_snow, settled_depth, seasonal_snowfall,
-                   snow_report_url)
+    message = ""
 
     if len(scores) > 0:
-        message += "\nHere are the scores for yesterday's NBA games:\n"
+        message += "Here are the scores for yesterday's NBA games:\n"
 
         for game in scores:
             message += str(game)
@@ -314,15 +257,122 @@ def main():
             message += "\n"
 
     message += "\nHere is the link for the full NBA schedule: %s" % \
-            ("http://espn.go.com/nba/schedule/_/date/" + sched_date)
+            ("http://espn.go.com/nba/schedule/_/date/" + date_string)
 
-    message += "\n\nHave a great %s!" % day_of_week
+    logging.debug("Exiting espn_nba_report method.")
 
-    send_email(message)
-    print "Script executed successfully. Mail sent."
+    return message
+
+def date_string(int_month, day, year):
+    """
+    Using the month, day, and year, determine a string that will be used to 
+    access a specific page on ESPN with all desired information.
+
+    Keyword arguments:
+    int_month - The month represented as a 1-12 integer
+    day - The day of the month
+
+    return - Formatted date string
+    """
+    logging.debug("Entering date_string method.")
+
+
+    date_string_month = "0" + str(int_month) if int_month < 10 \
+                                             else str(int_month)
+    date_string_day   = "0" + str(day - 1)   if day       < 10 \
+                                             else str(day - 1) 
+
+    logging.debug("Exiting date_string method.")
+
+    return "%s%s%s" % (year, date_string_month, date_string_day)
+
+def send_email(message, to_addrs = to_addrs, from_addr = from_addr):
+    """
+    Send an SMTP formatted email message to the specified to and from addresses.
+
+    Keyword arguments:
+    message - the SMTP formatted message
+    to - The list of addresses who will recieve the mail
+    from - The author of the message
+    """
+    logging.debug("Entering send_email method.")
+
+    server = smtplib.SMTP('smtp.gmail.com:587')
+    server.starttls()
+    server.login(authentication.mail_name, authentication.mail_pwd)
+    server.sendmail(from_addr, to_addrs, message)
+    server.quit()
+
+    logging.debug("Exiting send_email method.")
+
+def main():
+    try:
+        day_of_week, tomorrow, int_month, str_month, day, year = \
+                construct_time_variables(datetime.datetime.today())
+
+        message = ("Subject: Update for %s, %s %s\n\nHello, Joshwa. Here's "
+                   "your daily update--\r") % (day_of_week, str_month, day)
+    except Exception as e:
+        logging.error("Exception occured while setting up message:",
+                     exc_info=1)
+        send_mail(("Subject: Customized Daily Mail failure.\n\n"
+                "Good morning, Joshwa. I'm sorry to report that something "
+                "went wrong while attempting to prepare your update for today."
+                " Rest assured, the log files hold the answers. Have a great "
+                "day!"))
+        system.exit()
+
+    try:
+        message += bozeman_weather_report()
+        logging.info("Successfully included weather report.")
+    except Exception as e:
+        logging.error("Exception occured while processing weather:",
+                     exc_info=1)
+
+    try:
+        message += bridger_bowl_snow_report()
+        logging.info("Successfully included snow report.")
+    except Exception as e:
+        logging.error("Exception occured while processing snow report:", 
+                     exc_info=1)
+
+    try:
+        schedule_date = date_string(int_month, day, year)
+        message += espn_nba_report(schedule_date, tomorrow)
+        logging.info("Successfully included NBA report.")
+    except Exception as e:
+        logging.error("Exception occured while processing NBA report:",
+                     exc_info=1)
+
+    # No need for protection here, it is already guaranteed by the first try.
+    message += "Have a great %s!" % day_of_week
+
+    try:
+        send_email(message)
+        logging.info("Script executed successfully. Mail sent.")
+    except Exception as e:
+        logging.error("Exception occurred while attempting to send mail",
+                     exc_info=1)
 
 if __name__ == '__main__':
     try:
+        # Turn on logging.
+        logging.basicConfig(filename = "/var/log/customized-daily-mail.log",
+                            level = logging.INFO)
+
+        # Set up a handler to write to the console as well.
+        console = logging.StreamHandler()
+        console.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(
+                "%(name)-12s: %(levelname)-8s %(message)s")
+        console.setFormatter(formatter)
+        logging.getLogger('').addHandler(console)
+
+        print_formatting()
+
         main()
-    except Exception, e:
-        traceback.print_exc()
+    except Exception as e:
+        print "ERROR!"
+        print str(e)
+        logging.error("Unidentified exception detected during execution:",
+                     exc_info=1)
