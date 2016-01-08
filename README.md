@@ -27,7 +27,6 @@ In my implementation, customized daily-mail.py is executed from /etc/crontab. My
 ### TODOs
   * Unit testing for web scraping methods
     * In particular, the NBA game scraper is volatile when no games are scheduled for a given date (Both Dec. 24 and 25 failed due to the entire league having Christmas Eve off).
-  * Ability to ignore failing components of the mail while still including working components (would be especially relevant given the above note)
   * Determine whether or not a more object-oriented design would be more effective
     * Split parsing of each website to a class or file?
     * Identify any web scraping design patterns,
