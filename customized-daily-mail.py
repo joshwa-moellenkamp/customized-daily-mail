@@ -257,7 +257,7 @@ def espn_nba_report(date_string, tomorrow):
             message += "\n"
 
     message += "\nHere is the link for the full NBA schedule: %s" % \
-            ("http://espn.go.com/nba/schedule/_/date/" + date_string)
+            ("http://espn.go.com/nba/schedule/_/date/\n\n" + date_string)
 
     logging.debug("Exiting espn_nba_report method.")
 
