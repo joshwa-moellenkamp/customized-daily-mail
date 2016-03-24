@@ -460,14 +460,6 @@ def main():
                      exc_info=1)
 
     try:
-        schedule_date = date_string(int_month, day, year)
-        message += espn_nba_report(schedule_date, tomorrow)
-        logging.info("Successfully included NBA report.")
-    except Exception as e:
-        logging.error("Exception occured while processing NBA report:",
-                     exc_info=1)
-
-    try:
         message += eldora_snow_report()
         logging.info("Successfully included Eldora snow report.")
     except Exception as e:
@@ -489,6 +481,14 @@ def main():
         logging.error(
                 "Exception occurred while processing A-Basin snow report:",
                 exc_info=1)
+
+    try:
+        schedule_date = date_string(int_month, day, year)
+        message += espn_nba_report(schedule_date, tomorrow)
+        logging.info("Successfully included NBA report.")
+    except Exception as e:
+        logging.error("Exception occured while processing NBA report:",
+                     exc_info=1)
 
     # No need for protection here, it is already guaranteed by the first try.
     message += "Have a great %s!" % day_of_week
