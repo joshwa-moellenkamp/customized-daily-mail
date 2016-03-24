@@ -6,6 +6,7 @@ import subprocess
 import re
 import json
 import traceback
+import unittest
 
 # Hold mailing authentication information
 import authentication
@@ -64,7 +65,7 @@ def find_between(string, preceeding_pattern, trailing_pattern):
 
 def construct_time_variables(today):
     """
-    Using a provided datetime.datetime object representing the 
+    Using a provided datetime.datetime object representing the
     current date, construct an assortment of values used by this script.
 
     Keyword arguments:
@@ -97,6 +98,48 @@ def print_formatting():
             datetime.datetime.now().day,
             datetime.datetime.now().hour,
             datetime.datetime.now().minute))
+
+def eldora_snow_report():
+    """
+    Curl Eldora's snow report page. Parse for desired information.
+
+    return - constructed snow report string
+    """
+    logging.debug("Entering eldora_snow_report method.")
+
+    page = subprocess.call([
+            "curl",
+            "http://www.eldora.com/mountain.snow.php", "-o",
+            "eldora-snow-results.txt"])
+
+    # Read in the text file to a string.
+    with open("eldora-snow-results.txt", "r") as results_file:
+        results = results_file.read()
+
+    snow_report = find_between(results, "Current Conditions:</h2>", "<p>")
+    base = find_between(results, "Base:</strong>", "</p>")[1:]
+
+    one_day, two_day, three_day = "", "", ""
+    i = 0
+    for line in snow_report.splitlines():
+        if i == 1:
+            one_day = re.sub("\<br />$", "", line)
+        if i == 2:
+            two_day = re.sub("\<br />$", "", line)
+        if i == 3:
+            three_day = re.sub("\<br />$", "", line)
+        i = i + 1
+
+    url = "http://www.eldora.com/mountain.snow.php"
+
+    return ("Snow Report for Eldora Mountain Resort:\n"
+            "%s\n"
+            "%s\n"
+            "%s\n"
+            "Base: %s\n\n"
+            "Here's the link for the full snow report: %s\n\n") % (
+                one_day, two_day, three_day, base, url
+            )
 
 def bridger_bowl_snow_report():
     """
@@ -137,7 +180,7 @@ def bridger_bowl_snow_report():
             "%s settled base depth\n"
             "%s seasonal snowfall\n\n"
             "Here's the link for the full snow report: %s\n\n") % (
-                new_snow, daily_snow, settled_depth, 
+                new_snow, daily_snow, settled_depth,
                 seasonal_snowfall, snow_report_url)
 
 def bozeman_weather_report():
@@ -203,13 +246,13 @@ def espn_nba_report(date_string, tomorrow):
         iteration = iteration + 1
 
     # Scrape the upcoming schedule from the last element of the previous split.
-    upcoming_games = re.split("&lpos=nba:schedule:team", 
+    upcoming_games = re.split("&lpos=nba:schedule:team",
                               result[len(result) - 1])
 
     # Toss away the first two elements. Then, toss away odd indeces after that.
     # The split string is used for the team names along with the team's logos.
-    # upcoming_games[0] is the initial unwanted information, then [1] is the 
-    # logo. [2] is where we start receiving desired information, along with 
+    # upcoming_games[0] is the initial unwanted information, then [1] is the
+    # logo. [2] is where we start receiving desired information, along with
     # every other index after that.
 
     if len(upcoming_games) >= 2 \
@@ -265,7 +308,7 @@ def espn_nba_report(date_string, tomorrow):
 
 def date_string(int_month, day, year):
     """
-    Using the month, day, and year, determine a string that will be used to 
+    Using the month, day, and year, determine a string that will be used to
     access a specific page on ESPN with all desired information.
 
     Keyword arguments:
@@ -280,7 +323,7 @@ def date_string(int_month, day, year):
     date_string_month = "0" + str(int_month) if int_month < 10 \
                                              else str(int_month)
     date_string_day   = "0" + str(day - 1)   if day       < 10 \
-                                             else str(day - 1) 
+                                             else str(day - 1)
 
     logging.debug("Exiting date_string method.")
 
@@ -333,7 +376,7 @@ def main():
         message += bridger_bowl_snow_report()
         logging.info("Successfully included snow report.")
     except Exception as e:
-        logging.error("Exception occured while processing snow report:", 
+        logging.error("Exception occured while processing snow report:",
                      exc_info=1)
 
     try:
@@ -343,6 +386,13 @@ def main():
     except Exception as e:
         logging.error("Exception occured while processing NBA report:",
                      exc_info=1)
+
+    try:
+        message += eldora_snow_report()
+	logging.info("Successfully included Eldora snow report.")
+    except:
+        logging.error("Exception occured while processing Eldora snow report:",
+                      exc_info=1)
 
     # No need for protection here, it is already guaranteed by the first try.
     message += "Have a great %s!" % day_of_week
@@ -376,3 +426,18 @@ if __name__ == '__main__':
         print str(e)
         logging.error("Unidentified exception detected during execution:",
                      exc_info=1)
+
+class TestEldora(unittest.TestCase):
+
+    def TestEldora(self):
+        """
+        Unit test to see the output of the eldora_snow_report method.
+
+        Will always run successfully.
+
+        Invoke via command line with
+            $ python -m unittest customized-daily-mail.TestEldora.TestEldora
+        """
+        result = eldora_snow_report()
+        print "Here is the result: %s" % result
+        self.assertTrue(True)
