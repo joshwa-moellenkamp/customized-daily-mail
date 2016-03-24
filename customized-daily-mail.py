@@ -162,31 +162,17 @@ def loveland_snow_report():
     half_day, one_day, two_day, three_day, base = "", "", "", "", ""
     i = 0
     for line in snow_report.splitlines():
-        print "Line %s: %s" % (i, line)
-
         if i == 2:
-            print "i = 2 hit"
             half_day = find_between(line , "cccc;\">", "&#8243") + "\""
         if i == 7:
-            print "i = 7 hit"
             one_day = find_between(line , "cccc;\">", "&#8243") + "\""
         if i == 12:
-            print "i = 12 hit"
             two_day = find_between(line , "cccc;\">", "&#8243") + "\""
         if i == 17:
-            print "i = 17 hit"
             three_day = find_between(line , "cccc;\">", "&#8243") + "\""
         if i == 50:
-            print "i = 50 hit"
             base = find_between(line , "8080;\">", "&#8243") + "\""
-
         i = i + 1
-        #     one_day = re.sub("\<br />$", "", line)
-        # if i == 2:
-        #     two_day = re.sub("\<br />$", "", line)
-        # if i == 3:
-        #     three_day = re.sub("\<br />$", "", line)
-        # i = i + 1
 
     return ("Snow Report for Loveland Ski Area:\n"
             "%s in the last 12 hours\n"
@@ -196,6 +182,43 @@ def loveland_snow_report():
             "%s seasonal snowfall\n\n"
             "Here's the link for the full snow report: %s\n\n") % (
                 half_day, one_day, two_day, three_day, base, url
+            )
+
+def arapahoe_basin_snow_report():
+    """
+    Curl Arapahoe Basin's snow report page. Parse for desired information.
+
+    return - constructed snow report string
+    """
+    logging.debug("Entering arapahoe_basin_snow_report method.")
+
+    url = "http://arapahoebasin.com/ABasin/snow-conditions/default.aspx"
+    local_page_source = "abasin-snow-results.txt"
+    page = subprocess.call(["curl", url, "-o", local_page_source])
+
+    # Read in the text file to a string.
+    with open(local_page_source, "r") as results_file:
+        results = results_file.read()
+
+    snow_report = find_between(results, "New Snowfall", "Midway Snow Depth")
+
+    one_day, three_day, base = "", "", ""
+    i = 0
+    for line in snow_report.splitlines():
+        if i == 2:
+            one_day = find_between(line, "strong>", "&#8243") + "\""
+        if i == 3:
+            three_day = find_between(line, "strong>", "&#8243") + "\""
+        if i == 10:
+            base = find_between(line, "strong>", "&quot") + "\""
+        i = i + 1
+
+    return ("Snow Report for Arapahoe Basin:\n"
+            "%s in the last 24 hours\n"
+            "%s in the last 72 hours\n"
+            "%s seasonal snowfall\n\n"
+            "Here's the link for the full snow report: %s\n\n") % (
+                one_day, three_day, base, url
             )
 
 def bridger_bowl_snow_report():
@@ -459,6 +482,14 @@ def main():
                 "Exception occured while processing Loveland snow report:",
                 exc_info=1)
 
+    try:
+        message += arapahoe_basin_snow_report()
+        logging.info("Successfully included Arapahoe Basin snow report.")
+    except Exception as e:
+        logging.error(
+                "Exception occurred while processing A-Basin snow report:",
+                exc_info=1)
+
     # No need for protection here, it is already guaranteed by the first try.
     message += "Have a great %s!" % day_of_week
 
@@ -517,5 +548,18 @@ class UnitTests(unittest.TestCase):
             $ python -m unittest customized-daily-mail.UnitTests.TestLoveland
         """
         result = loveland_snow_report()
+        print "Output from method shown below:\n\n%s" % result
+        self.assertTrue(True)
+
+    def TestArapahoe(self):
+        """
+        Unit test to see the output of the arapahoe_basin_snow_report method.
+
+        Unit test will always return successfully.
+
+        Invoke via command line with
+            $ python -m unittest customized-daily-mail.UnitTests.TestArapahoe
+        """
+        result = arapahoe_basin_snow_report()
         print "Output from method shown below:\n\n%s" % result
         self.assertTrue(True)
