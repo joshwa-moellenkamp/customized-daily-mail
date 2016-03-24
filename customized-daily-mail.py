@@ -107,13 +107,12 @@ def eldora_snow_report():
     """
     logging.debug("Entering eldora_snow_report method.")
 
-    page = subprocess.call([
-            "curl",
-            "http://www.eldora.com/mountain.snow.php", "-o",
-            "eldora-snow-results.txt"])
+    url = "http://www.eldora.com/mountain.snow.php"
+    local_page_source = "eldora-snow-results.txt"
+    page = subprocess.call(["curl", url, "-o", local_page_source])
 
     # Read in the text file to a string.
-    with open("eldora-snow-results.txt", "r") as results_file:
+    with open(local_page_source, "r") as results_file:
         results = results_file.read()
 
     snow_report = find_between(results, "Current Conditions:</h2>", "<p>")
@@ -130,8 +129,6 @@ def eldora_snow_report():
             three_day = re.sub("\<br />$", "", line)
         i = i + 1
 
-    url = "http://www.eldora.com/mountain.snow.php"
-
     return ("Snow Report for Eldora Mountain Resort:\n"
             "%s\n"
             "%s\n"
@@ -139,6 +136,66 @@ def eldora_snow_report():
             "Base: %s\n\n"
             "Here's the link for the full snow report: %s\n\n") % (
                 one_day, two_day, three_day, base, url
+            )
+
+def loveland_snow_report():
+    """
+    Curl Loveland's snow report page. Parse for desired information.
+
+    return - constructed snow report string
+    """
+    logging.debug("Entering loveland_snow_report method.")
+
+    url = "http://skiloveland.com/snow-report/"
+    local_page_source = "loveland-snow-results.txt"
+    page = subprocess.call(["curl", url, "-o", local_page_source])
+
+    # Read in the text file to a string.
+    with open(local_page_source, "r") as results_file:
+        results = results_file.read()
+
+    icon_url_1 = "wp-content/uploads/2015/04/5am_snow_report_icon.png"
+    icon_url_2 = "Report/15minutes/data.jpg?123456789"
+
+    snow_report = find_between(results, icon_url_1, icon_url_2)
+
+    half_day, one_day, two_day, three_day, base = "", "", "", "", ""
+    i = 0
+    for line in snow_report.splitlines():
+        print "Line %s: %s" % (i, line)
+
+        if i == 2:
+            print "i = 2 hit"
+            half_day = find_between(line , "cccc;\">", "&#8243") + "\""
+        if i == 7:
+            print "i = 7 hit"
+            one_day = find_between(line , "cccc;\">", "&#8243") + "\""
+        if i == 12:
+            print "i = 12 hit"
+            two_day = find_between(line , "cccc;\">", "&#8243") + "\""
+        if i == 17:
+            print "i = 17 hit"
+            three_day = find_between(line , "cccc;\">", "&#8243") + "\""
+        if i == 50:
+            print "i = 50 hit"
+            base = find_between(line , "8080;\">", "&#8243") + "\""
+
+        i = i + 1
+        #     one_day = re.sub("\<br />$", "", line)
+        # if i == 2:
+        #     two_day = re.sub("\<br />$", "", line)
+        # if i == 3:
+        #     three_day = re.sub("\<br />$", "", line)
+        # i = i + 1
+
+    return ("Snow Report for Loveland Ski Area:\n"
+            "%s in the last 12 hours\n"
+            "%s in the last 24 hours\n"
+            "%s in the last 48 hours\n"
+            "%s in the last 72 hours\n"
+            "%s seasonal snowfall\n\n"
+            "Here's the link for the full snow report: %s\n\n") % (
+                half_day, one_day, two_day, three_day, base, url
             )
 
 def bridger_bowl_snow_report():
@@ -389,10 +446,18 @@ def main():
 
     try:
         message += eldora_snow_report()
-	logging.info("Successfully included Eldora snow report.")
-    except:
+        logging.info("Successfully included Eldora snow report.")
+    except Exception as e:
         logging.error("Exception occured while processing Eldora snow report:",
                       exc_info=1)
+
+    try:
+        message += loveland_snow_report()
+        logging.info("Successfully included Loveland snow report")
+    except Exception as e:
+        logging.error(
+                "Exception occured while processing Loveland snow report:",
+                exc_info=1)
 
     # No need for protection here, it is already guaranteed by the first try.
     message += "Have a great %s!" % day_of_week
@@ -427,17 +492,30 @@ if __name__ == '__main__':
         logging.error("Unidentified exception detected during execution:",
                      exc_info=1)
 
-class TestEldora(unittest.TestCase):
+class UnitTests(unittest.TestCase):
 
     def TestEldora(self):
         """
         Unit test to see the output of the eldora_snow_report method.
 
-        Will always run successfully.
+        Unit test will always return successfully.
 
         Invoke via command line with
-            $ python -m unittest customized-daily-mail.TestEldora.TestEldora
+            $ python -m unittest customized-daily-mail.UnitTests.TestEldora
         """
         result = eldora_snow_report()
-        print "Here is the result: %s" % result
+        print "Output from method shown below:\n\n%s" % result
+        self.assertTrue(True)
+
+    def TestLoveland(self):
+        """
+        Unit test to see the output of the loveland_snow_report method.
+
+        Unit test will always return successfully.
+
+        Invoke via command line with
+            $ python -m unittest customized-daily-mail.UnitTests.TestLoveland
+        """
+        result = loveland_snow_report()
+        print "Output from method shown below:\n\n%s" % result
         self.assertTrue(True)
